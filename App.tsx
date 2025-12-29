@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
@@ -12,16 +13,25 @@ import { OrderDetail } from './components/OrderDetail';
 import { Invoices } from './components/Invoices';
 import { Messages } from './components/Messages';
 import { Settings } from './components/Settings';
+import { Loader2 } from 'lucide-react';
 
-const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+const AppContent: React.FC = () => {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('bookings');
   const [confirmedBookingData, setConfirmedBookingData] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
   // If not authenticated, show the login screen
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  if (!user) {
+    return <Login />;
   }
 
   const handleBookingCalculated = (data: any) => {
@@ -114,6 +124,14 @@ const App: React.FC = () => {
         </nav>
       </div>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

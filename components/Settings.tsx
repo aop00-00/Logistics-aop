@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import {
   User,
   Bell,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
+  const { profile, user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState({
@@ -32,10 +34,19 @@ export const Settings: React.FC = () => {
 
   const handleSave = () => {
     setIsLoading(true);
+    // In future: await supabase.from('profiles').update({...})
     setTimeout(() => {
       setIsLoading(false);
     }, 1500);
   };
+
+  const handleLogout = async () => {
+    try {
+        await signOut();
+    } catch(e) {
+        console.error(e);
+    }
+  }
 
   const tabs = [
     { id: 'profile', label: 'Mi Perfil', icon: <User className="w-5 h-5" /> },
@@ -44,6 +55,10 @@ export const Settings: React.FC = () => {
     { id: 'security', label: 'Seguridad', icon: <Shield className="w-5 h-5" /> },
     { id: 'billing', label: 'Facturación', icon: <CreditCard className="w-5 h-5" /> },
   ];
+
+  const fullName = profile?.first_name 
+  ? `${profile.first_name} ${profile.last_name || ''}`
+  : 'User';
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto animate-in fade-in duration-500">
@@ -76,7 +91,10 @@ export const Settings: React.FC = () => {
             </nav>
             
             <div className="mt-8 pt-8 border-t border-slate-100 px-4 pb-2">
-              <button className="flex items-center gap-3 text-red-500 font-bold text-sm hover:text-red-600 transition-colors w-full">
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-3 text-red-500 font-bold text-sm hover:text-red-600 transition-colors w-full"
+              >
                 <LogOut className="w-5 h-5" />
                 Cerrar Sesión
               </button>
@@ -95,7 +113,7 @@ export const Settings: React.FC = () => {
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full p-1 border-4 border-slate-50 bg-white shadow-inner">
                     <img 
-                      src="https://picsum.photos/seed/alex/200/200" 
+                      src={`https://ui-avatars.com/api/?name=${fullName}&background=2563eb&color=fff`}
                       alt="Profile" 
                       className="w-full h-full rounded-full object-cover"
                     />
@@ -105,11 +123,13 @@ export const Settings: React.FC = () => {
                   </button>
                 </div>
                 <div className="text-center md:text-left flex-1">
-                  <h3 className="text-2xl font-black text-slate-800">Alex Morgan</h3>
+                  <h3 className="text-2xl font-black text-slate-800">{fullName}</h3>
                   <p className="text-slate-400 font-bold text-sm uppercase tracking-wide mb-4">Logistics Manager</p>
                   <div className="flex flex-wrap justify-center md:justify-start gap-3">
                     <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase">Administrador</span>
-                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold uppercase">Verificado</span>
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${profile?.is_pro ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {profile?.is_pro ? 'PRO Plan' : 'Free Plan'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -119,17 +139,24 @@ export const Settings: React.FC = () => {
                 <h4 className="text-lg font-black text-slate-800 mb-6">Información Personal</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Completo</label>
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="text" defaultValue="Alex Morgan" className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none" />
+                      <input type="text" defaultValue={profile?.first_name} className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none" />
+                    </div>
+                  </div>
+                   <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Apellido</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input type="text" defaultValue={profile?.last_name} className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Email Corporativo</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="email" defaultValue="alex.morgan@logisticscorp.com" className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none" />
+                      <input type="email" disabled defaultValue={profile?.email} className="w-full bg-slate-100 text-slate-500 cursor-not-allowed border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold outline-none" />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -137,17 +164,6 @@ export const Settings: React.FC = () => {
                     <div className="relative">
                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input type="tel" defaultValue="+1 (555) 000-0000" className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Idioma</label>
-                    <div className="relative">
-                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <select className="w-full bg-slate-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none appearance-none cursor-pointer">
-                        <option>Español (ES)</option>
-                        <option>English (US)</option>
-                        <option>Deutsch (DE)</option>
-                      </select>
                     </div>
                   </div>
                 </div>

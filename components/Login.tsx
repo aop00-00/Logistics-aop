@@ -1,28 +1,56 @@
 
 import React, { useState } from 'react';
-import { Mail, Lock, User, ArrowRight, Truck, LayoutDashboard, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { Mail, Lock, User, ArrowRight, Truck, LayoutDashboard, Loader2, AlertCircle } from 'lucide-react';
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || (isRegistering && !name)) return;
+    setErrorMsg('');
+    if (!email || !password) return;
     
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      if (isRegistering) {
+        // Sign Up
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName
+            }
+          }
+        });
+
+        if (error) throw error;
+        // Supabase handles session automatically on success
+        
+      } else {
+        // Sign In
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (error) throw error;
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMsg(error.message || "An error occurred during authentication.");
+    } finally {
       setIsLoading(false);
-      onLogin();
-    }, 1500);
+    }
   };
 
   return (
@@ -74,19 +102,40 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </p>
           </div>
 
+          {errorMsg && (
+            <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="text-sm font-bold">{errorMsg}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {isRegistering && (
-              <div className="space-y-2 animate-in slide-in-from-top-4 fade-in">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Completo</label>
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ej. Juan Pérez"
-                    className="w-full bg-white border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:border-blue-600 focus:ring-0 outline-none transition-all"
-                  />
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4 fade-in">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Juan"
+                      className="w-full bg-white border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:border-blue-600 focus:ring-0 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Apellido</label>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Pérez"
+                      className="w-full bg-white border-2 border-slate-100 rounded-2xl py-4 px-4 text-sm font-bold focus:border-blue-600 focus:ring-0 outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -96,10 +145,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 <input
-                  type="text"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Usuario o Email"
+                  placeholder="name@company.com"
                   className="w-full bg-white border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:border-blue-600 focus:ring-0 outline-none transition-all"
                 />
               </div>
@@ -126,7 +175,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <button
               type="submit"
-              disabled={isLoading || !email || !password || (isRegistering && !name)}
+              disabled={isLoading || !email || !password || (isRegistering && !firstName)}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -147,7 +196,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <p className="text-sm font-medium text-slate-500">
               {isRegistering ? '¿Ya tiene una cuenta?' : '¿No tiene una cuenta?'}
               <button
-                onClick={() => setIsRegistering(!isRegistering)}
+                onClick={() => {
+                   setIsRegistering(!isRegistering);
+                   setErrorMsg('');
+                }}
                 className="ml-2 text-blue-600 font-black hover:underline"
               >
                 {isRegistering ? 'Iniciar Sesión' : 'Registrarse ahora'}
