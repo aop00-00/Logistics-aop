@@ -1,0 +1,7 @@
+{
+  "name": "LogisticsPro - Global Freight Management",
+  "description": "A high-fidelity logistics dashboard and booking platform featuring live shipment tracking, route calculation, and automated payment systems.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
